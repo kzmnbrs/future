@@ -18,7 +18,6 @@ func (s *Group) Await(ctx context.Context, cancel context.CancelFunc) error {
 		go func(f Future) {
 			if err := f.Await(ctx, cancel); err != nil {
 				atomic.CompareAndSwapPointer(&fstErrPtr, nil, unsafe.Pointer(&err))
-				cancel()
 			}
 			wg.Done()
 		}(f)
@@ -36,6 +35,7 @@ func (s *Group) Await(ctx context.Context, cancel context.CancelFunc) error {
 	}
 
 	if errPtr := atomic.LoadPointer(&fstErrPtr); errPtr != nil {
+		cancel()
 		return *(*error)(errPtr)
 	}
 	return ctx.Err()
