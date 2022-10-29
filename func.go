@@ -6,7 +6,7 @@ type Func struct {
 	Func func() error
 }
 
-func FromFunc(f func() error) Promise {
+func FromFunc(f func() error) Future {
 	return &Func{Func: f}
 }
 

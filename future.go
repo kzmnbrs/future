@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-type Promise interface {
+type Future interface {
 	Await(context.Context, context.CancelFunc) error
 }

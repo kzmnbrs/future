@@ -4,11 +4,11 @@ import (
 	"context"
 )
 
-type Chain []Promise
+type Chain []Future
 
 func (s *Chain) Await(ctx context.Context, cancel context.CancelFunc) error {
-	for _, p := range *s {
-		if err := p.Await(ctx, cancel); err != nil {
+	for _, f := range *s {
+		if err := f.Await(ctx, cancel); err != nil {
 			return err
 		}
 	}

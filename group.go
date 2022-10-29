@@ -7,21 +7,21 @@ import (
 	"unsafe"
 )
 
-type Group []Promise
+type Group []Future
 
 func (s *Group) Await(ctx context.Context, cancel context.CancelFunc) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(*s))
 
 	var fstErrPtr unsafe.Pointer
-	for _, p := range *s {
-		go func(p Promise) {
-			if err := p.Await(ctx, cancel); err != nil {
+	for _, f := range *s {
+		go func(f Future) {
+			if err := f.Await(ctx, cancel); err != nil {
 				atomic.CompareAndSwapPointer(&fstErrPtr, nil, unsafe.Pointer(&err))
 				cancel()
 			}
 			wg.Done()
-		}(p)
+		}(f)
 	}
 
 	quit := make(chan struct{})
