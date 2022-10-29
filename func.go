@@ -10,6 +10,16 @@ func FromFunc(f func() error) Future {
 	return &Func{Func: f}
 }
 
-func (f *Func) Await(_ context.Context, _ context.CancelFunc) error {
-	return f.Func()
+func (f *Func) Await(ctx context.Context, cancel context.CancelFunc) error {
+	res := make(chan error)
+	go func() {
+		res <- f.Func()
+	}()
+
+	select {
+	case err := <-res:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
