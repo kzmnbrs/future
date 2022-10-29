@@ -18,6 +18,9 @@ func (f *Func) Await(ctx context.Context, cancel context.CancelFunc) error {
 
 	select {
 	case err := <-res:
+		if err != nil {
+			cancel()
+		}
 		return err
 	case <-ctx.Done():
 		return ctx.Err()
