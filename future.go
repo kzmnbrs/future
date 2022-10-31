@@ -5,5 +5,5 @@ import (
 )
 
 type Future interface {
-	Await(context.Context, context.CancelFunc) error
+	Await(context.Context) error
 }

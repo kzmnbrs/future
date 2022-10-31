@@ -2,15 +2,24 @@ package future
 
 import "context"
 
-type Func struct {
-	Func func() error
-}
+type (
+	Func struct {
+		Func func() error
+	}
+	VoidFunc struct {
+		Func func()
+	}
+)
 
-func FromFunc(f func() error) Future {
+func WrapFunc(f func() error) Future {
 	return &Func{Func: f}
 }
 
-func (f *Func) Await(ctx context.Context, cancel context.CancelFunc) error {
+func WrapVoidFunc(f func()) Future {
+	return &VoidFunc{Func: f}
+}
+
+func (f *Func) Await(ctx context.Context) error {
 	res := make(chan error)
 	go func() {
 		res <- f.Func()
@@ -18,11 +27,22 @@ func (f *Func) Await(ctx context.Context, cancel context.CancelFunc) error {
 
 	select {
 	case err := <-res:
-		if err != nil {
-			cancel()
-		}
 		return err
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (f *VoidFunc) Await(ctx context.Context) error {
+	quit := make(chan struct{})
+	go func() {
+		f.Func()
+		quit <- struct{}{}
+	}()
+
+	select {
+	case <-quit:
+	case <-ctx.Done():
+	}
+	return ctx.Err()
 }

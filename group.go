@@ -3,22 +3,31 @@ package future
 import (
 	"context"
 	"sync"
-	"sync/atomic"
-	"unsafe"
 )
 
 type Group []Future
 
-func (s *Group) Await(ctx context.Context, cancel context.CancelFunc) error {
-	wg := sync.WaitGroup{}
-	wg.Add(len(*s))
+func (g *Group) Await(ctx context.Context) error {
+	childrenCtx, childrenCancel := context.WithCancel(ctx)
+	defer childrenCancel()
 
-	var fstErrPtr unsafe.Pointer
-	for _, f := range *s {
+	wg := sync.WaitGroup{}
+	wg.Add(len(*g))
+
+	var (
+		fstErr    error
+		fstErrMtx sync.Mutex
+	)
+	for _, f := range *g {
 		go func(f Future) {
-			if err := f.Await(ctx, cancel); err != nil {
-				cancel()
-				atomic.CompareAndSwapPointer(&fstErrPtr, nil, unsafe.Pointer(&err))
+			if err := f.Await(childrenCtx); err != nil {
+				childrenCancel()
+
+				fstErrMtx.Lock()
+				if fstErr == nil {
+					fstErr = err
+				}
+				fstErrMtx.Unlock()
 			}
 			wg.Done()
 		}(f)
@@ -32,11 +41,8 @@ func (s *Group) Await(ctx context.Context, cancel context.CancelFunc) error {
 
 	select {
 	case <-quit:
+		return fstErr
 	case <-ctx.Done():
+		return ctx.Err()
 	}
-
-	if errPtr := atomic.LoadPointer(&fstErrPtr); errPtr != nil {
-		return *(*error)(errPtr)
-	}
-	return ctx.Err()
 }

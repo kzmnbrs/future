@@ -6,10 +6,9 @@ import (
 
 type Chain []Future
 
-func (s *Chain) Await(ctx context.Context, cancel context.CancelFunc) error {
-	for _, f := range *s {
-		if err := f.Await(ctx, cancel); err != nil {
-			cancel()
+func (c *Chain) Await(ctx context.Context) error {
+	for _, f := range *c {
+		if err := f.Await(ctx); err != nil {
 			return err
 		}
 	}
