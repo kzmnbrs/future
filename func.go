@@ -3,45 +3,49 @@ package future
 import "context"
 
 type (
-	Func struct {
-		Func func() error
+	_func struct {
+		Func func(context.Context) error
 	}
-	VoidFunc struct {
-		Func func()
+	_voidFunc struct {
+		Func func(context.Context)
 	}
 )
 
-func WrapFunc(f func() error) Future {
-	return &Func{Func: f}
+// WrapFunc wraps the function call in a future.
+// Await returns the resulting error.
+func WrapFunc(f func(context.Context) error) Future {
+	return &_func{Func: f}
 }
 
-func WrapVoidFunc(f func()) Future {
-	return &VoidFunc{Func: f}
+// WrapVoidFunc wraps the function call in a future.
+// Await returns either nil or context.Cancelled.
+func WrapVoidFunc(f func(context.Context)) Future {
+	return &_voidFunc{Func: f}
 }
 
-func (f *Func) Await(ctx context.Context) error {
-	res := make(chan error)
+func (f *_func) Await(ctx context.Context) error {
+	errs := make(chan error)
 	go func() {
-		res <- f.Func()
+		errs <- f.Func(ctx)
 	}()
 
 	select {
-	case err := <-res:
+	case err := <-errs:
 		return err
 	case <-ctx.Done():
 		return ctx.Err()
 	}
 }
 
-func (f *VoidFunc) Await(ctx context.Context) error {
-	quit := make(chan struct{})
+func (f *_voidFunc) Await(ctx context.Context) error {
+	done := make(chan struct{})
 	go func() {
-		f.Func()
-		quit <- struct{}{}
+		defer close(done)
+		f.Func(ctx)
 	}()
 
 	select {
-	case <-quit:
+	case <-done:
 	case <-ctx.Done():
 	}
 	return ctx.Err()

@@ -4,8 +4,9 @@ import (
 	"context"
 )
 
-//go:generate mockgen -source=$GOFILE -package=future -destination=future_mock.go
-
+// Future represents a deferred function call.
+// Wrapped function starts on Await.
 type Future interface {
+	// Await waits for the future to complete and returns the result.
 	Await(context.Context) error
 }

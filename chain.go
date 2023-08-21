@@ -4,6 +4,7 @@ import (
 	"context"
 )
 
+// Chain executes futures sequentially, breaking on the first error.
 type Chain []Future
 
 func (c *Chain) Await(ctx context.Context) error {

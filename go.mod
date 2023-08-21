@@ -2,4 +2,7 @@ module github.com/kzmnbrs/future
 
 go 1.16
 
-require github.com/golang/mock v1.6.0
+require (
+	github.com/stretchr/testify v1.8.4
+	golang.org/x/sync v0.3.0
+)
